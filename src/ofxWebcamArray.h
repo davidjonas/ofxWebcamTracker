@@ -119,6 +119,7 @@ class ofxWebcamArray
     std::vector<ofVideoGrabber *> webcams;
     std::vector<ofxWebcamImageCalibration *> calibrations;
     vector<ofVideoDevice> devices;
+    vector<ofVideoDevice> activeDevices;
     int detectedWebcamsCache;
     ofFbo colorFbo;
     ofPixels colorPixels;
@@ -135,6 +136,42 @@ class ofxWebcamArray
 
     }
 
+    vector<ofVideoDevice> getDevices(){
+      if(detectedWebcamsCache == -1)
+      {
+        numWebcamsDetected();
+      }
+
+      return devices;
+
+    }
+
+    void setActiveDevices(vector<ofVideoDevice> devs) {
+      activeDevices = devs;
+    }
+
+    vector<ofVideoDevice> getActiveDevices(){
+      return activeDevices;
+    }
+
+    bool isActive(ofVideoDevice vd) {
+      bool found = false;
+      for (auto & elem : activeDevices)
+      {
+      	if (elem.id == vd.id)
+      	{
+      		found = true;
+      		break;
+      	}
+      }
+      if(found) {
+      	return true;
+      }
+      else {
+      	return false;
+      }
+    }
+
     int numWebcamsDetected()
     {
       if(detectedWebcamsCache == -1)
@@ -149,23 +186,37 @@ class ofxWebcamArray
       }
     }
 
-    void init(int resolutionWidth=DEFAULT_RES_WIDTH, int resolutionHeight=DEFAULT_RES_HEIGHT)
+    void init(vector<ofVideoDevice> active, int resolutionWidth=DEFAULT_RES_WIDTH, int resolutionHeight=DEFAULT_RES_HEIGHT)
     {
-      ofLogNotice("ofxWebcamArray::init") << "Initializing " << numWebcamsDetected() << " Webcams.";
-      for(uint8_t i=0; i<numWebcamsDetected(); i++)
-      {
-        ofVideoGrabber * v = new ofVideoGrabber();
-        v->setDeviceID(devices[i].id);
-        v->setup(resolutionWidth,resolutionHeight);
-        webcams.push_back(v);
-        ofxWebcamImageCalibration * c = new ofxWebcamImageCalibration(i, resolutionWidth, resolutionHeight);
-        calibrations.push_back(c);
-        width += resolutionWidth;
-        height = resolutionHeight;
-      }
+      if(numWebcamsDetected() > 0) {
+        if(active.size() == 0){
+          setActiveDevices(devices);
+        }
+        else {
+          setActiveDevices(active);
+        }
 
-      ofLogNotice("ofWebcamArray") << "Alocating FBO of size: " << width << ", " << height;
-      allocateImages();
+        ofLogNotice("ofxWebcamArray::init") << "Initializing " << activeDevices.size() << " Webcams.";
+        for(uint8_t i=0; i<activeDevices.size(); i++)
+        {
+          ofVideoGrabber * v = new ofVideoGrabber();
+          v->setDeviceID(activeDevices[i].id);
+          v->setup(resolutionWidth,resolutionHeight);
+          webcams.push_back(v);
+          ofxWebcamImageCalibration * c = new ofxWebcamImageCalibration(i, resolutionWidth, resolutionHeight);
+          calibrations.push_back(c);
+          width += resolutionWidth;
+          height = resolutionHeight;
+        }
+
+        ofLogNotice("ofWebcamArray") << "Alocating FBO of size: " << width << ", " << height;
+        allocateImages();
+      }
+    }
+
+    void init(int resolutionWidth=DEFAULT_RES_WIDTH, int resolutionHeight=DEFAULT_RES_HEIGHT){
+      vector<ofVideoDevice> empty;
+      init(empty, resolutionWidth, resolutionHeight);
     }
 
     void allocateImages()

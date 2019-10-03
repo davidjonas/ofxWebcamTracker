@@ -36,6 +36,7 @@ class ofxWebcamTracker {
     ~ofxWebcamTracker();
 
     int numWebcamsDetected();
+    vector<ofVideoDevice> getDevices();
 
     //Getters and setters
     void setBackgroundSubtract(bool value);
@@ -64,7 +65,8 @@ class ofxWebcamTracker {
     ofxWebcamBlob * getOverlapBlob();
 
     //Action Methods
-    void init();
+    void init(vector<ofVideoDevice> active, int resolutionWidth=DEFAULT_RES_WIDTH, int resolutionHeight=DEFAULT_RES_HEIGHT);
+    void init(int resolutionWidth=DEFAULT_RES_WIDTH, int resolutionHeight=DEFAULT_RES_HEIGHT);
     void update();
     void grabBackground();
     void subtractBackground();

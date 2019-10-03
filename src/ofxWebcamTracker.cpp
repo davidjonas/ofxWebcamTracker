@@ -15,10 +15,14 @@ int ofxWebcamTracker::numWebcamsDetected()
   return webcam.numWebcamsDetected();
 }
 
-void ofxWebcamTracker::init(){
+vector<ofVideoDevice> ofxWebcamTracker::getDevices() {
+  return webcam.getDevices();
+}
+
+void ofxWebcamTracker::init(vector<ofVideoDevice> active, int resolutionWidth, int resolutionHeight){
   if(numWebcamsDetected() > 0)
   {
-    webcam.init();
+    webcam.init(active, resolutionWidth, resolutionHeight);
 
     width = webcam.width;
     height = webcam.height;
@@ -37,6 +41,11 @@ void ofxWebcamTracker::init(){
     idCounter = 0;
     minBlobSize = 100;
   }
+}
+
+void ofxWebcamTracker::init(int resolutionWidth, int resolutionHeight){
+  vector<ofVideoDevice> active;
+  init(active, resolutionWidth, resolutionHeight);
 }
 
 //Getters and setters
