@@ -479,7 +479,7 @@ void ofxWebcamTracker::drawBlobPositions(float x, float y, float scale)
 
 void ofxWebcamTracker::drawBackground(float x, float y)
 {
-  if(numWebcamsDetected() > 0){
+  if(numWebcamsDetected() > 0 && backgroundSubtract){
     ofSetColor(255);
     background.draw(x,y);
   }
@@ -487,7 +487,7 @@ void ofxWebcamTracker::drawBackground(float x, float y)
 
 void ofxWebcamTracker::drawBackground(float x, float y, float scale)
 {
-  if(numWebcamsDetected() > 0){
+  if(numWebcamsDetected() > 0 && backgroundSubtract){
     ofSetColor(255);
     background.draw(x,y,width*scale, height*scale);
   }
@@ -509,7 +509,7 @@ void ofxWebcamTracker::drawContours(float x, float y, float scale)
 
 void ofxWebcamTracker::drawDiff(float x, float y)
 {
-  if(numWebcamsDetected() > 0){
+  if(numWebcamsDetected() > 0 && backgroundSubtract){
     ofSetColor(255);
     diff.draw(x, y);
   }
@@ -517,7 +517,7 @@ void ofxWebcamTracker::drawDiff(float x, float y)
 
 void ofxWebcamTracker::drawDiff(float x, float y, float scale)
 {
-  if(numWebcamsDetected() > 0){
+  if(numWebcamsDetected() > 0 && backgroundSubtract){
     ofSetColor(255);
     diff.draw(x,y,width*scale,height*scale);
   }

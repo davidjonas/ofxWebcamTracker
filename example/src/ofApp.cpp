@@ -3,7 +3,6 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
   tracker.init();
-  tracker.setThreshold(60);
 }
 
 //--------------------------------------------------------------
@@ -14,10 +13,11 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-  tracker.drawRGB(0,0,1);
-  tracker.drawContours(0,0,1);
-  tracker.drawBlobPositions(0,0,1);
-  tracker.drawEdgeThreshold(0,0, 1);
+  tracker.drawDebug(0,0); //Draws all the visualizations
+  //tracker.drawRGB(0,0);
+  //tracker.drawContours(0,0);
+  //tracker.drawBlobPositions(0,0);
+  //tracker.drawEdgeThreshold(0,0);
 }
 
 //--------------------------------------------------------------
@@ -26,6 +26,12 @@ void ofApp::keyPressed(int key){
 		case ' ':
 			tracker.grabBackground();
 			break;
+    case 'w':
+      tracker.setThreshold(tracker.getThreshold()+1);
+      break;
+    case 's':
+      tracker.setThreshold(tracker.getThreshold()-1);
+      break;
   }
 }
 
