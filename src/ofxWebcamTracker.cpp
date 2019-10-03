@@ -40,6 +40,7 @@ void ofxWebcamTracker::init(vector<ofVideoDevice> active, int resolutionWidth, i
     removeAfterSeconds = 5;
     idCounter = 0;
     minBlobSize = 100;
+    outdoorMode=false;
   }
 }
 
@@ -95,6 +96,10 @@ void ofxWebcamTracker::setMinBlobSize(float value){
   minBlobSize = value;
 }
 
+void ofxWebcamTracker::setOutdoorMode(bool value){
+  outdoorMode = value;
+}
+
 bool ofxWebcamTracker::getBackgroundSubtract(){
   return backgroundSubtract;
 }
@@ -125,6 +130,10 @@ float ofxWebcamTracker::getEdgeThreshold(){
 
 float ofxWebcamTracker::getMinBlobSize(){
   return minBlobSize;
+}
+
+bool ofxWebcamTracker::getOutdoorMode(){
+  return outdoorMode;
 }
 
 int ofxWebcamTracker::getWidth(){
@@ -169,7 +178,39 @@ bool ofxWebcamTracker::isOverlapCandidate(ofxWebcamBlob blob){
   return inter.getArea() >= blob.blob.boundingRect.getArea()/2;
 }
 
+bool ofxWebcamTracker::shouldGrabBackground(){
+  uint8_t active = 0;
+  float lastSeen = -1;
+  int numBlobs = blobs.size();
+
+
+  for(uint8_t i=0; i<numBlobs; i++)
+  {
+    if(blobs[i].isActive())
+    {
+      if(blobs[i].speed > 3)
+      {
+        active++;
+      }
+    }
+    else {
+      float bls = blobs[i].timeSinceLastSeen();
+      if(lastSeen == -1 || lastSeen > bls){
+        lastSeen = bls;
+      }
+    }
+  }
+
+  return active == 0 && ((numBlobs>0 && lastSeen > 3) || numBlobs == 0) && ofGetElapsedTimef() - lastBackgroundGrab > 3;
+}
+
 void ofxWebcamTracker::update(){
+
+  if(outdoorMode && shouldGrabBackground())
+  {
+    grabBackground();
+  }
+
   if(numWebcamsDetected() > 0)
   {
     webcam.update();
@@ -197,6 +238,7 @@ void ofxWebcamTracker::grabBackground() {
   background.setFromPixels(grayscale.getPixels());
   backgroundSubtract = true;
   clearBlobs();
+  lastBackgroundGrab = ofGetElapsedTimef();
 }
 
 void ofxWebcamTracker::subtractBackground() {
@@ -533,7 +575,9 @@ void ofxWebcamTracker::drawDebug(float x, float y)
 
 void ofxWebcamTracker::drawDebug(float x, float y, float scale)
 {
-  if(numWebcamsDetected() > 0){
+  if(numWebcamsDetected() > 0)
+  {
+    drawGrayscale    (x, y, 0.5 * scale);
     drawBackground   (x+width*scale/2, y, 0.5 * scale);
     drawDiff         (x, y+height*scale/2, 0.5 * scale);
     drawRGB          (x+width*scale/2, y+height*scale/2, 0.5 * scale);

@@ -15,6 +15,7 @@ class ofxWebcamTracker {
 
     //flags
     bool backgroundSubtract;
+    bool outdoorMode;
     bool blur;
     bool initialized;
 
@@ -28,6 +29,7 @@ class ofxWebcamTracker {
     int idCounter;
     float minBlobSize;
     float edgeThreshold;
+    float lastBackgroundGrab;
 
   public:
     vector<ofxWebcamBlob> blobs;
@@ -47,6 +49,7 @@ class ofxWebcamTracker {
     void setRemoveAfterSeconds(float value);
     void setEdgeThreshold(float value);
     void setMinBlobSize(float value);
+    void setOutdoorMode(bool value);
     bool getBackgroundSubtract();
     bool getBlur();
     float getBlurAmount();
@@ -57,11 +60,13 @@ class ofxWebcamTracker {
     int getWidth();
     int getHeight();
     float getMinBlobSize();
+    bool getOutdoorMode();
     int getWebcamIndex();
     int getNumActiveBlobs();
     vector<ofxWebcamBlob> getActiveBlobs();
     bool isOverlapCandidate(ofxWebcamBlob blob);
     bool thereAreOverlaps();
+    bool shouldGrabBackground();
     ofxWebcamBlob * getOverlapBlob();
 
     //Action Methods
