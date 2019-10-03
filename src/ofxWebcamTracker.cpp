@@ -201,7 +201,7 @@ bool ofxWebcamTracker::shouldGrabBackground(){
     }
   }
 
-  return active == 0 && ((numBlobs>0 && lastSeen > 3) || numBlobs == 0) && ofGetElapsedTimef() - lastBackgroundGrab > 3;
+  return active == 0 && ((numBlobs>0 && lastSeen > 1) || numBlobs == 0) && ofGetElapsedTimef() - lastBackgroundGrab > 3;
 }
 
 void ofxWebcamTracker::update(){
