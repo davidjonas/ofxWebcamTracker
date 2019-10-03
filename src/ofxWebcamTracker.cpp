@@ -205,12 +205,6 @@ bool ofxWebcamTracker::shouldGrabBackground(){
 }
 
 void ofxWebcamTracker::update(){
-
-  if(outdoorMode && shouldGrabBackground())
-  {
-    grabBackground();
-  }
-
   if(numWebcamsDetected() > 0)
   {
     webcam.update();
@@ -231,6 +225,11 @@ void ofxWebcamTracker::update(){
     }
 
     matchAndUpdateBlobs();
+
+    if(outdoorMode && shouldGrabBackground())
+    {
+      grabBackground();
+    }
   }
 }
 
