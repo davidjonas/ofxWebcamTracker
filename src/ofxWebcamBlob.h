@@ -3,7 +3,6 @@
 
 class ofxWebcamBlob {
   private:
-    float zHint;
     float tolerance;
     bool active;
     float lastSeen;
@@ -15,13 +14,13 @@ class ofxWebcamBlob {
     ofVec3f direction;
     float speed;
 
-    ofxWebcamBlob(int id, ofxCvBlob blob, float zHint, float tolerance);
+    ofxWebcamBlob(int id, ofxCvBlob blob, float tolerance);
     ~ofxWebcamBlob();
 
-    void update(ofxCvBlob blob, float zHint);
+    void update(ofxCvBlob blob);
     bool intersects(ofxWebcamBlob otherBlob);
     ofRectangle getIntersection(ofxWebcamBlob otherBlob);
-    float difference(ofxCvBlob otherBlob, float zHint);
+    float difference(ofxCvBlob otherBlob);
     void setTolerance(float value);
     float getTolerance();
     void draw(float x, float y);

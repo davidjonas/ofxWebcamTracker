@@ -518,7 +518,21 @@ obj/linux64/Release/src/ofApp.o: \
  /home/david/work/openFrameworks/libs/openFrameworks/video/ofGstVideoPlayer.h \
  /home/david/work/openFrameworks/libs/openFrameworks/3d/of3dUtils.h \
  /home/david/work/openFrameworks/libs/openFrameworks/3d/ofCamera.h \
- /home/david/work/openFrameworks/libs/openFrameworks/3d/ofEasyCam.h
+ /home/david/work/openFrameworks/libs/openFrameworks/3d/ofEasyCam.h \
+ /home/david/work/openFrameworks/addons/ofxWebcamTracker/src/ofxWebcamTracker.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxOpenCv.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvConstants.h \
+ /usr/include/opencv/cv.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvImage.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvGrayscaleImage.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvBlob.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvColorImage.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvFloatImage.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvShortImage.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvContourFinder.h \
+ /home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvHaarFinder.h \
+ /home/david/work/openFrameworks/addons/ofxWebcamTracker/src/ofxWebcamBlob.h \
+ /home/david/work/openFrameworks/addons/ofxWebcamTracker/src/ofxWebcamArray.h
 
 /home/david/work/openFrameworks/addons/ofxWebcamTracker/example/src/ofApp.h:
 
@@ -1589,3 +1603,31 @@ obj/linux64/Release/src/ofApp.o: \
 /home/david/work/openFrameworks/libs/openFrameworks/3d/ofCamera.h:
 
 /home/david/work/openFrameworks/libs/openFrameworks/3d/ofEasyCam.h:
+
+/home/david/work/openFrameworks/addons/ofxWebcamTracker/src/ofxWebcamTracker.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxOpenCv.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvConstants.h:
+
+/usr/include/opencv/cv.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvImage.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvGrayscaleImage.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvBlob.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvColorImage.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvFloatImage.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvShortImage.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvContourFinder.h:
+
+/home/david/work/openFrameworks/addons/ofxOpenCv/src/ofxCvHaarFinder.h:
+
+/home/david/work/openFrameworks/addons/ofxWebcamTracker/src/ofxWebcamBlob.h:
+
+/home/david/work/openFrameworks/addons/ofxWebcamTracker/src/ofxWebcamArray.h:

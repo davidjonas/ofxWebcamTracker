@@ -2,22 +2,31 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-
+  tracker.init();
+  tracker.setThreshold(60);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-
+  ofBackground(100,100,100);
+  tracker.update();
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-
+  tracker.drawRGB(0,0,1);
+  tracker.drawContours(0,0,1);
+  tracker.drawBlobPositions(0,0,1);
+  tracker.drawEdgeThreshold(0,0, 1);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+  switch (key){
+		case ' ':
+			tracker.grabBackground();
+			break;
+  }
 }
 
 //--------------------------------------------------------------
@@ -66,6 +75,6 @@ void ofApp::gotMessage(ofMessage msg){
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
+void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }

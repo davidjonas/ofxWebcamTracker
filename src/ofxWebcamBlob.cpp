@@ -1,8 +1,7 @@
 #include "ofxWebcamBlob.h"
 
-ofxWebcamBlob::ofxWebcamBlob(int id, ofxCvBlob blob, float zHint, float tolerance){
+ofxWebcamBlob::ofxWebcamBlob(int id, ofxCvBlob blob, float tolerance){
   this->blob = blob;
-  this->zHint = zHint;
   this->active = true;
   this->tolerance = tolerance;
   this->id = id;
@@ -14,16 +13,15 @@ ofxWebcamBlob::~ofxWebcamBlob(){
 
 }
 
-void ofxWebcamBlob::update(ofxCvBlob blob, float zHint)
+void ofxWebcamBlob::update(ofxCvBlob blob)
 {
   direction.x = blob.centroid.x - this->blob.centroid.x;
   direction.y = blob.centroid.y - this->blob.centroid.y;
-  direction.z = zHint - this->zHint;
+  direction.z = 0.0;
 
   speed = direction.length();
 
   this->blob = blob;
-  this->zHint = zHint;
   this->active = true;
 }
 
@@ -36,11 +34,11 @@ ofRectangle ofxWebcamBlob::getIntersection(ofxWebcamBlob otherBlob) {
   return blob.boundingRect.getIntersection(otherBlob.blob.boundingRect);
 }
 
-float ofxWebcamBlob::difference(ofxCvBlob otherBlob, float zHint){
+float ofxWebcamBlob::difference(ofxCvBlob otherBlob){
   ofVec3f diff(
             otherBlob.centroid.x - blob.centroid.x,
             otherBlob.centroid.y - blob.centroid.y,
-            zHint - this->zHint
+            0.0
   );
 
   float distance = diff.length();

@@ -2,6 +2,9 @@
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 
+#define DEFAULT_RES_WIDTH 640
+#define DEFAULT_RES_HEIGHT 360
+
 class ofxWebcamImageCalibration
 {
   private:
@@ -12,10 +15,14 @@ class ofxWebcamImageCalibration
     float rotation;
 
   public:
-    ofxWebcamImageCalibration() : width(640), height(480), position(0.0f, 0.0f), scale(1.0f, 1.0f), rotation(0) {
+    ofxWebcamImageCalibration() : width(DEFAULT_RES_WIDTH), height(DEFAULT_RES_HEIGHT), position(0.0f, 0.0f), scale(1.0f, 1.0f), rotation(0) {
     }
 
-    ofxWebcamImageCalibration(int index) : width(640), height(480), position(640 * index, 0.0f), scale(1.0f, 1.0f), rotation(0) {
+    ofxWebcamImageCalibration(int index, int resolutionWidth=DEFAULT_RES_WIDTH, int resolutionHeight=DEFAULT_RES_HEIGHT) : scale(1.0f, 1.0f), rotation(0) {
+      width = resolutionWidth;
+      height = resolutionHeight;
+      position.x = width * index;
+      position.y = 0.0f;
       ofLogNotice("ofxWebcamImageCalibration") << "Calibrating Webcam " << index << " to position: (" << position.x << ", " << position.y << ")";
     }
 
@@ -109,22 +116,18 @@ class ofxWebcamImageCalibration
 class ofxWebcamArray
 {
   private:
-    std::vector<ofxWebcam *> Webcams;
+    std::vector<ofVideoGrabber *> webcams;
     std::vector<ofxWebcamImageCalibration *> calibrations;
-    bool registration;
+    vector<ofVideoDevice> devices;
     int detectedWebcamsCache;
     ofFbo colorFbo;
-    ofFbo depthFbo;
     ofPixels colorPixels;
-    ofPixels depthPixels;
-    ofxCvColorImage colorImg;
-    ofxCvGrayscaleImage grayscale;
 
   public:
     int width;
     int height;
 
-    ofxWebcamArray() : registration(false), detectedWebcamsCache(-1), width(0), height(0) {
+    ofxWebcamArray() : detectedWebcamsCache(-1), width(0), height(0) {
 
     }
 
@@ -136,9 +139,9 @@ class ofxWebcamArray
     {
       if(detectedWebcamsCache == -1)
       {
-        ofxWebcam WebcamCounter;
-        int detectedWebcamsCache = WebcamCounter.numTotalDevices();
-        WebcamCounter.close();
+        ofVideoGrabber vg;
+        devices = vg.listDevices();
+        detectedWebcamsCache = devices.size();
         return detectedWebcamsCache;
       }
       else{
@@ -146,38 +149,21 @@ class ofxWebcamArray
       }
     }
 
-    void setRegistration(bool value)
-    {
-      registration = value;
-
-      for(uint8_t i=0; i<Webcams.size(); i++)
-      {
-        Webcams[i]->setRegistration(registration);
-      }
-    }
-
-    void init()
+    void init(int resolutionWidth=DEFAULT_RES_WIDTH, int resolutionHeight=DEFAULT_RES_HEIGHT)
     {
       ofLogNotice("ofxWebcamArray::init") << "Initializing " << numWebcamsDetected() << " Webcams.";
       for(uint8_t i=0; i<numWebcamsDetected(); i++)
       {
-        ofxWebcam * k = new ofxWebcam();
-        k->init();
-        Webcams.push_back(k);
-        ofxWebcamImageCalibration * c = new ofxWebcamImageCalibration(i);
+        ofVideoGrabber * v = new ofVideoGrabber();
+        v->setDeviceID(devices[i].id);
+        v->setup(resolutionWidth,resolutionHeight);
+        webcams.push_back(v);
+        ofxWebcamImageCalibration * c = new ofxWebcamImageCalibration(i, resolutionWidth, resolutionHeight);
         calibrations.push_back(c);
+        width += resolutionWidth;
+        height = resolutionHeight;
       }
-    }
 
-    void open()
-    {
-      for(uint8_t i=0; i<Webcams.size(); i++)
-      {
-        Webcams[i]->open(i);
-        width += Webcams[i]->width;
-        height = Webcams[i]->height;
-        calibrations[i]->setDimensions(Webcams[i]->width, Webcams[i]->height);
-      }
       ofLogNotice("ofWebcamArray") << "Alocating FBO of size: " << width << ", " << height;
       allocateImages();
     }
@@ -185,135 +171,50 @@ class ofxWebcamArray
     void allocateImages()
     {
       colorFbo.allocate(width, height, GL_RGB);
-      depthFbo.allocate(width, height, GL_RGB);
       colorPixels.allocate(width, height, GL_RGB);
-      depthPixels.allocate(width, height, GL_RGB);
-      colorImg.allocate(width, height);
-      grayscale.allocate(width, height);
-    }
-
-    void open(int index)
-    {
-      if(index < Webcams.size())
-      {
-        Webcams[index]->open(index);
-        width = Webcams[index]->width;
-        height = Webcams[index]->height;
-        allocateImages();
-      }
-      else
-      {
-        ofLogError("ofxWebcamArray::open") << "There is no Webcam with index " << index;
-      }
     }
 
     void update()
     {
-      for(uint8_t i=0; i<Webcams.size(); i++)
+      for(uint8_t i=0; i<webcams.size(); i++)
       {
-        Webcams[i]->update();
+        webcams[i]->update();
       }
     }
 
     void close()
     {
-      for(uint8_t i=0; i<Webcams.size(); i++)
+      for(uint8_t i=0; i<webcams.size(); i++)
       {
-        Webcams[i]->close();
+        webcams[i]->close();
       }
     }
 
-    void setCameraTiltAngle(int index, int WebcamAngle)
+    ofPixels & getPixels() //TODO: This is failing only a pixel on top!!
     {
-      if(index < Webcams.size())
-      {
-        Webcams[index]->setCameraTiltAngle(WebcamAngle);
-      }
-      else
-      {
-        ofLogError("ofxWebcamArray::setCameraTiltAngle") << "There is no Webcam with index " << index;
-      }
-    }
-
-    void setCameraTiltAngle(int WebcamAngle)
-    {
-      for(uint8_t i=0; i<Webcams.size(); i++)
-      {
-        Webcams[i]->setCameraTiltAngle(WebcamAngle);
-      }
-    }
-
-    ofPixels & getPixels()
-    {
-      colorFbo.bind();
-      glViewport(0, -height, width, height);
-      ofClear(0, 0, 0, 255);
+      colorFbo.begin();
+      glViewport(0, 0, width, height);
+      ofClear(0, 0, 0);
       ofSetColor(255);
       ofEnableBlendMode(OF_BLENDMODE_SCREEN);
-      for(uint8_t i=0; i<Webcams.size(); i++)
+      for(uint8_t i=0; i<webcams.size(); i++)
       {
         ofPushMatrix();
         ofTranslate(calibrations[i]->getPosition().x, calibrations[i]->getPosition().y);
         ofRotateDeg(calibrations[i]->getRotation());
-        ofScale(calibrations[i]->getScale().x, -calibrations[i]->getScale().y);
-        Webcams[i]->draw(0,0);
+        ofScale(calibrations[i]->getScale().x, calibrations[i]->getScale().y);
+        webcams[i]->draw(0,0);
         ofPopMatrix();
       }
       ofEnableBlendMode(OF_BLENDMODE_ALPHA);
-      colorFbo.unbind();
+      colorFbo.end();
 
       colorFbo.readToPixels(colorPixels);
 
       return colorPixels;
     }
 
-    ofPixels & getDepthPixels()
-    {
-      depthFbo.bind();
-      glViewport(0, -height, width, height);
-      ofClear(0, 0, 0, 0);
-      ofSetColor(255);
-      ofEnableBlendMode(OF_BLENDMODE_SCREEN);
-      for(uint8_t i=0; i<Webcams.size(); i++)
-      {
-        ofPushMatrix();
-        ofTranslate(calibrations[i]->getPosition().x, calibrations[i]->getPosition().y);
-        ofRotateDeg(calibrations[i]->getRotation());
-        ofScale(calibrations[i]->getScale().x, -calibrations[i]->getScale().y);
-        Webcams[i]->drawDepth(0,0);
-        ofPopMatrix();
-      }
-      ofEnableBlendMode(OF_BLENDMODE_ALPHA);
-      depthFbo.unbind();
-
-      depthFbo.readToPixels(depthPixels);
-
-      colorImg.setFromPixels(depthPixels);
-      grayscale = colorImg;
-
-      return grayscale.getPixels();
-    }
-
-    float getDistanceAt(ofPoint p)
-    {
-      return getDistanceAt(p.x, p.y);
-    }
-
-    float getDistanceAt(float x, float y)
-    {
-      for(uint8_t i=0; i<Webcams.size(); i++)
-      {
-        ofRectangle bound = calibrations[i]->getBoundingRect();
-
-        if(bound.inside(x, y))
-        {
-          return Webcams[i]->getDistanceAt(calibrations[i]->getPosition().x + x, calibrations[i]->getPosition().y + y);
-        }
-      }
-      return 0.0f;
-    }
-
-    void calibratePosition(int index, ofPoint p)
+    void calibratePosition(uint8_t index, ofPoint p)
     {
       if(index < calibrations.size())
       {

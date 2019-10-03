@@ -6,15 +6,6 @@ ofxWebcamTracker::ofxWebcamTracker() {
   edgeThreshold = 10.0f;
 }
 
-ofxWebcamTracker::ofxWebcamTracker(int index){
-  init(index);
-}
-
-ofxWebcamTracker::ofxWebcamTracker(int index, float tolerance){
-  init(index);
-  this->tolerance = tolerance;
-}
-
 ofxWebcamTracker::~ofxWebcamTracker(){
   webcam.close();
 }
@@ -24,27 +15,28 @@ int ofxWebcamTracker::numWebcamsDetected()
   return webcam.numWebcamsDetected();
 }
 
-void ofxWebcamTracker::init(int index){
-  webcamIndex = index;
-  webcam.init();
-  webcam.open();
+void ofxWebcamTracker::init(){
+  if(numWebcamsDetected() > 0)
+  {
+    webcam.init();
 
-  width = webcam.width;
-  height = webcam.height;
+    width = webcam.width;
+    height = webcam.height;
 
-  colorImg.allocate(width,height);
-  grayscale.allocate(width, height);
-  background.allocate(width, height);
-  diff.allocate(width, height);
-  threshold = 3;  //60
-  blurAmount = 9;
-  backgroundSubtract = false;
-  blur = false;
-  initialized = true;
-  tolerance = 100;
-  removeAfterSeconds = 5;
-  idCounter = 0;
-  minBlobSize = 100;
+    colorImg.allocate(width,height);
+    grayscale.allocate(width, height);
+    background.allocate(width, height);
+    diff.allocate(width, height);
+    threshold = 3;  //60
+    blurAmount = 9;
+    backgroundSubtract = false;
+    blur = false;
+    initialized = true;
+    tolerance = 100;
+    removeAfterSeconds = 5;
+    idCounter = 0;
+    minBlobSize = 100;
+  }
 }
 
 //Getters and setters
@@ -134,10 +126,6 @@ int ofxWebcamTracker::getHeight(){
   return height;
 }
 
-int ofxWebcamTracker::getWebcamIndex(){
-  return webcamIndex;
-}
-
 int ofxWebcamTracker::getNumActiveBlobs()
 {
   uint8_t count = 0;
@@ -173,24 +161,27 @@ bool ofxWebcamTracker::isOverlapCandidate(ofxWebcamBlob blob){
 }
 
 void ofxWebcamTracker::update(){
-  webcam.update();
-  colorImg.setFromPixels(webcam.getPixels());
-  grayscale = colorImg;
-
-  if(blur)
+  if(numWebcamsDetected() > 0)
   {
-    grayscale.blurGaussian(blurAmount);
-  }
+    webcam.update();
+    colorImg.setFromPixels(webcam.getPixels());
+    grayscale = colorImg;
 
-  if(backgroundSubtract){
-    subtractBackground();
-    contourFinder.findContours(diff, minBlobSize, (width*height)/2, 20, false);
-  }
-  else {
-    contourFinder.findContours(grayscale, minBlobSize, (width*height)/2, 20, false);
-  }
+    if(blur)
+    {
+      grayscale.blurGaussian(blurAmount);
+    }
 
-  matchAndUpdateBlobs();
+    if(backgroundSubtract){
+      subtractBackground();
+      contourFinder.findContours(diff, minBlobSize, (width*height)/2, 20, false);
+    }
+    else {
+      contourFinder.findContours(grayscale, minBlobSize, (width*height)/2, 20, false);
+    }
+
+    matchAndUpdateBlobs();
+  }
 }
 
 void ofxWebcamTracker::grabBackground() {
@@ -225,119 +216,157 @@ void ofxWebcamTracker::subtractBackground() {
 //The Tracker
 void ofxWebcamTracker::matchAndUpdateBlobs()
 {
-  vector<ofxCvBlob> cvBlobs = contourFinder.blobs;
-  vector<bool> trackedBlob(blobs.size(), false);
-  vector<ofxCvBlob>::iterator currentBlob = cvBlobs.begin();
-  vector<ofxCvBlob> newBlobs;
-
-  while(currentBlob != cvBlobs.end())
+  if(numWebcamsDetected() > 0)
   {
-    int chosenMatch = -1;
-    float minDifference = 10000; //TODO: this should be flagged instead of ridiculous value.
+    vector<ofxCvBlob> cvBlobs = contourFinder.blobs;
+    vector<bool> trackedBlob(blobs.size(), false);
+    vector<ofxCvBlob>::iterator currentBlob = cvBlobs.begin();
+    vector<ofxCvBlob> newBlobs;
 
-    for(int i=0; i<blobs.size(); i++)
+    while(currentBlob != cvBlobs.end())
     {
-      float blobDiff = blobs[i].difference(*currentBlob, getZHintForBlob(*currentBlob));
+      int chosenMatch = -1;
+      float minDifference = 10000; //TODO: this should be flagged instead of ridiculous value.
 
-      if(blobDiff != -1 && blobDiff <= minDifference)
+      for(uint8_t i=0; i<blobs.size(); i++)
       {
-        if(blobDiff == minDifference)
+        float blobDiff = blobs[i].difference(*currentBlob);
+
+        if(blobDiff == 0)
         {
-          //TODO: There are two blobs that match, this is really rare. How to decide which blob is which?
-          //      right now the latest blob in the vector will be chosen.
-          ofLog(OF_LOG_WARNING) << "Blob conflict found!!" << endl;
-        }
-        minDifference = blobDiff;
-        chosenMatch = i;
-      }
-    }
-
-    if(chosenMatch != -1)
-    {
-      blobs[chosenMatch].update(*currentBlob, getZHintForBlob(*currentBlob));
-      trackedBlob[chosenMatch] = true;
-    }
-    else
-    {
-      bool isValid = true;
-      // for(int i=0; i<blobs.size(); i++)
-      // {
-      //   float interArea = currentBlob->boundingRect.getIntersection(blobs[i].blob.boundingRect).getArea();
-      //   if(interArea != 0 && (interArea >= currentBlob->boundingRect.getArea() * 0.9 || interArea >= blobs[i].blob.boundingRect.getArea() * 0.7))
-      //   {
-      //     isValid = false;
-      //   }
-      // }
-
-      if(isValid) newBlobs.push_back(*currentBlob);
-    }
-
-    currentBlob++;
-  }
-
-  for(int i=0; i<newBlobs.size(); i++)
-  {
-    float zHint = getZHintForBlob(newBlobs[i]);
-    ofxWebcamBlob newBlob(++idCounter, newBlobs[i], zHint, tolerance);
-    blobs.push_back(newBlob);
-  }
-
-  for(int i=0; i<trackedBlob.size(); i++)
-  {
-      if(!trackedBlob[i])
-      {
-        if(!blobs[i].isOverlapping() && blobs[i].timeSinceLastSeen() > removeAfterSeconds)
-        {
-            if(i < blobs.size()){
-                blobs.erase(blobs.begin()+i);
-            }
+          chosenMatch = i;
+          break;
         }
 
-
-        if((blobs[i].isActive() || blobs[i].isOverlapping()) && isOverlapCandidate(blobs[i]))
+        if(blobDiff != -1 && blobDiff <= minDifference)
         {
-          //TODO: Check for ovelapping blobs;
-          int overlapIndex = -1;
-          for(uint8_t b=0; b<blobs.size(); b++)
+          if(blobDiff == minDifference)
           {
-            if(trackedBlob[b] && isOverlapCandidate(blobs[b]) && blobs[i].intersects(blobs[b]))
-            {
-              //BLOBS OVERLAP!
-              blobs[i].setOverlap(true);
-              blobs[b].setOverlap(true);
-              overlapIndex = b;
-              break;
-            }
+            //TODO: There are two blobs that match, this is really rare. How to decide which blob is which?
+            //      right now the latest blob in the vector will be chosen.
+            ofLog(OF_LOG_WARNING) << "Blob conflict found!!" << endl;
           }
-
-          if(overlapIndex == -1)
-          {
-            blobs[i].setOverlap(false);
-          }
+          minDifference = blobDiff;
+          chosenMatch = i;
         }
       }
-      else {
-        if(blobs[i].isOverlapping())
+
+      if(chosenMatch != -1)
+      {
+        blobs[chosenMatch].update(*currentBlob);
+        trackedBlob[chosenMatch] = true;
+      }
+      else
+      {
+        bool isValid = true;
+        // for(uint8_t i=0; i<blobs.size(); i++)
+        // {
+        //   float interArea = currentBlob->boundingRect.getIntersection(blobs[i].blob.boundingRect).getArea();
+        //   if(interArea != 0 && (interArea >= currentBlob->boundingRect.getArea() * 0.9 || interArea >= blobs[i].blob.boundingRect.getArea() * 0.7))
+        //   {
+        //     isValid = false;
+        //   }
+        // }
+
+        if(isValid) newBlobs.push_back(*currentBlob);
+      }
+
+      currentBlob++;
+    }
+
+    for(uint8_t i=0; i<newBlobs.size(); i++)
+    {
+      ofxWebcamBlob newBlob(++idCounter, newBlobs[i], tolerance);
+      blobs.push_back(newBlob);
+    }
+
+    for(uint8_t i=0; i<trackedBlob.size(); i++)
+    {
+        if(!trackedBlob[i])
         {
-          for(uint8_t b=0; b<blobs.size(); b++)
+          if(!blobs[i].isOverlapping() && blobs[i].timeSinceLastSeen() > removeAfterSeconds)
           {
-            if(trackedBlob[b] && blobs[b].isOverlapping() && !blobs[i].intersects(blobs[b]))
+              if(i < blobs.size()){
+                  blobs.erase(blobs.begin()+i);
+              }
+          }
+
+          //If blob just disapeared or is overlapping
+          if((blobs[i].isActive() && isOverlapCandidate(blobs[i])) || blobs[i].isOverlapping())
+          {
+            int overlapIndex = -1;
+            for(uint8_t b=0; b<blobs.size(); b++)
             {
-              //BLOBS STOPPED OVERLAPPING!
-              blobs[i].setOverlap(false);
+              if(trackedBlob[b] && isOverlapCandidate(blobs[b]) && blobs[i].intersects(blobs[b]))
+              {
+                //BLOBS OVERLAP!
+                blobs[i].setOverlap(true);
+                blobs[b].setOverlap(true);
+                overlapIndex = b;
+                break;
+              }
+            }
+
+            if(overlapIndex == -1)
+            {
+              for(uint8_t b=0; b<blobs.size(); b++)
+              {
+                blobs[b].setOverlap(false);
+              }
+            }
+          }
+        }
+        else {
+          if(!blobs[i].isActive())
+          {
+            //Blob came back!
+            for(uint8_t b=0; b<blobs.size(); b++)
+            {
               blobs[b].setOverlap(false);
-              break;
+            }
+          }
+
+          if(blobs[i].isOverlapping())
+          {
+            for(uint8_t b=0; b<blobs.size(); b++)
+            {
+              if(trackedBlob[b] && blobs[b].isOverlapping() && !blobs[i].intersects(blobs[b]))
+              {
+                //BLOBS STOPPED OVERLAPPING!
+                blobs[i].setOverlap(false);
+                blobs[b].setOverlap(false);
+                break;
+              }
             }
           }
         }
-      }
-      blobs[i].setActive(trackedBlob[i]);
+        blobs[i].setActive(trackedBlob[i]);
+    }
   }
 }
 
-float ofxWebcamTracker::getZHintForBlob(ofxCvBlob blob)
+bool ofxWebcamTracker::thereAreOverlaps()
 {
-  return webcam.getDistanceAt(blob.centroid);
+  for(uint8_t b=0; b<blobs.size(); b++)
+  {
+    if(blobs[b].isOverlapping())
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+ofxWebcamBlob * ofxWebcamTracker::getOverlapBlob()
+{
+  for(uint8_t b=0; b<blobs.size(); b++)
+  {
+    if(blobs[b].isOverlapping() && blobs[b].isActive())
+    {
+      return &blobs[b];
+    }
+  }
+  return NULL;
 }
 
 void ofxWebcamTracker::clearBlobs(){
@@ -354,126 +383,171 @@ ofxCvGrayscaleImage ofxWebcamTracker::getGrayImage(){
   return grayscale;
 }
 
-ofxCvGrayscaleImage ofxWebcamTracker::getDepthImage(){
-  return depthImage;
-}
-
 //Draw and debug methods
-void ofxWebcamTracker::drawDepth(float x, float y)
-{
-  depthImage.draw(x, y);
-}
-
-void ofxWebcamTracker::drawDepth(float x, float y, float scale)
-{
-  depthImage.draw(x, y, width*scale, height*scale);
-}
-
 void ofxWebcamTracker::drawRGB(float x, float y)
 {
-  colorImg.draw(x, y, width, height);
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    colorImg.draw(x, y, width, height);
+  }
 }
 
 void ofxWebcamTracker::drawRGB(float x, float y, float scale)
 {
-  colorImg.draw(x, y, width*scale, height*scale);
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    colorImg.draw(x, y, width*scale, height*scale);
+  }
 }
 
-void ofxWebcamTracker::drawBlobPositions(float x, float y){
-  drawBlobPositions(x,y,1.0);
+void ofxWebcamTracker::drawGrayscale(float x, float y)
+{
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    grayscale.draw(x, y, width, height);
+  }
 }
 
-void ofxWebcamTracker::drawBlobPositions(float x, float y, float scale){
-  for (int i = 0; i < blobs.size(); i++){
+void ofxWebcamTracker::drawGrayscale(float x, float y, float scale)
+{
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    grayscale.draw(x, y, width*scale, height*scale);
+  }
+}
 
-    if(blobs[i].isActive())
+void ofxWebcamTracker::drawBlobPositions(float x, float y)
+{
+  if(numWebcamsDetected() > 0){
+    drawBlobPositions(x,y,1.0);
+  }
+}
+
+void ofxWebcamTracker::drawBlobPositions(float x, float y, float scale)
+{
+  if(numWebcamsDetected() > 0){
+    for (uint8_t i = 0; i < blobs.size(); i++)
     {
-      ofFill();
-      ofSetColor(255,0,0);
-      ofCircle(x+ blobs[i].blob.centroid.x * scale,
-             y+ blobs[i].blob.centroid.y * scale,
-             10);
-
-      ofSetColor(255);
-      ofDrawBitmapString(ofToString(blobs[i].id),
-            x+ blobs[i].blob.centroid.x * scale,
-            y+ blobs[i].blob.centroid.y * scale);
-
-      if(blobs[i].isOverlapping())
+      if(blobs[i].isActive())
       {
-        ofSetLineWidth(10);
-        ofNoFill();
+        ofFill();
         ofSetColor(255,0,0);
-        ofDrawRectangle(x+blobs[i].blob.boundingRect.x * scale,
-                        y+blobs[i].blob.boundingRect.y * scale,
-                        blobs[i].blob.boundingRect.width * scale,
-                        blobs[i].blob.boundingRect.height * scale);
-        ofSetLineWidth(1);
-      }
-    }
-    else {
-      ofNoFill();
-      ofCircle(x+ blobs[i].blob.centroid.x * scale,
-             y+ blobs[i].blob.centroid.y * scale,
-             10);
+        ofDrawCircle(x+ blobs[i].blob.centroid.x * scale,
+          y+ blobs[i].blob.centroid.y * scale,
+          10);
 
-      ofSetColor(255);
-      ofDrawBitmapString(ofToString(blobs[i].id),
-            x+ blobs[i].blob.centroid.x * scale,
-            y+ blobs[i].blob.centroid.y * scale);
+        ofSetColor(255);
+        ofDrawBitmapString(ofToString(blobs[i].id),
+        x+ blobs[i].blob.centroid.x * scale,
+        y+ blobs[i].blob.centroid.y * scale);
+
+        if(blobs[i].isOverlapping())
+        {
+          ofSetLineWidth(10);
+          ofNoFill();
+          ofSetColor(255,0,0);
+          ofDrawRectangle(x+blobs[i].blob.boundingRect.x * scale,
+            y+blobs[i].blob.boundingRect.y * scale,
+            blobs[i].blob.boundingRect.width * scale,
+            blobs[i].blob.boundingRect.height * scale);
+          ofSetLineWidth(1);
+        }
+      }
+      else {
+        ofNoFill();
+        ofDrawCircle(x+ blobs[i].blob.centroid.x * scale,
+          y+ blobs[i].blob.centroid.y * scale,
+          10);
+
+        ofSetColor(255);
+        ofDrawBitmapString(ofToString(blobs[i].id),
+        x+ blobs[i].blob.centroid.x * scale,
+        y+ blobs[i].blob.centroid.y * scale);
+      }
     }
   }
 }
 
-void ofxWebcamTracker::drawBackground(float x, float y){
-  background.draw(x,y);
+void ofxWebcamTracker::drawBackground(float x, float y)
+{
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    background.draw(x,y);
+  }
 }
 
-void ofxWebcamTracker::drawBackground(float x, float y, float scale){
-  background.draw(x,y,width*scale, height*scale);
+void ofxWebcamTracker::drawBackground(float x, float y, float scale)
+{
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    background.draw(x,y,width*scale, height*scale);
+  }
 }
 
-void ofxWebcamTracker::drawContours(float x, float y){
-  contourFinder.draw(x,y);
+void ofxWebcamTracker::drawContours(float x, float y)
+{
+  if(numWebcamsDetected() > 0){
+    contourFinder.draw(x,y);
+  }
 }
 
-void ofxWebcamTracker::drawContours(float x, float y, float scale){
-  contourFinder.draw(x,y,width*scale,height*scale);
+void ofxWebcamTracker::drawContours(float x, float y, float scale)
+{
+  if(numWebcamsDetected() > 0){
+    contourFinder.draw(x,y,width*scale,height*scale);
+  }
 }
 
-void ofxWebcamTracker::drawDiff(float x, float y){
-  diff.draw(x, y);
+void ofxWebcamTracker::drawDiff(float x, float y)
+{
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    diff.draw(x, y);
+  }
 }
 
-void ofxWebcamTracker::drawDiff(float x, float y, float scale){
-  diff.draw(x,y,width*scale,height*scale);
+void ofxWebcamTracker::drawDiff(float x, float y, float scale)
+{
+  if(numWebcamsDetected() > 0){
+    ofSetColor(255);
+    diff.draw(x,y,width*scale,height*scale);
+  }
 }
 
-void ofxWebcamTracker::drawDebug(float x, float y) {
-  drawDebug(x, y, 1.0);
+void ofxWebcamTracker::drawDebug(float x, float y)
+{
+  if(numWebcamsDetected() > 0){
+    drawDebug(x, y, 1.0);
+  }
 }
 
 
-void ofxWebcamTracker::drawDebug(float x, float y, float scale) {
-  drawDepth(x,y,0.5 * scale);
-  drawBackground(x+width*scale/2, y, 0.5 * scale);
-  drawDiff(x, y+height*scale/2, 0.5 * scale);
-  drawRGB(x+width*scale/2, y+height*scale/2, 0.5 * scale);
-  drawContours(x+width*scale/2, y+height*scale/2, 0.5 * scale);
-  drawBlobPositions(x+width*scale/2, y+height*scale/2, 0.5 * scale);
-  drawEdgeThreshold(x+width*scale/2, y+height*scale/2, 0.5 * scale);
+void ofxWebcamTracker::drawDebug(float x, float y, float scale)
+{
+  if(numWebcamsDetected() > 0){
+    drawBackground   (x+width*scale/2, y, 0.5 * scale);
+    drawDiff         (x, y+height*scale/2, 0.5 * scale);
+    drawRGB          (x+width*scale/2, y+height*scale/2, 0.5 * scale);
+    drawContours     (x+width*scale/2, y+height*scale/2, 0.5 * scale);
+    drawBlobPositions(x+width*scale/2, y+height*scale/2, 0.5 * scale);
+    drawEdgeThreshold(x+width*scale/2, y+height*scale/2, 0.5 * scale);
+  }
 }
 
 void ofxWebcamTracker::drawEdgeThreshold(float x, float y)
 {
-  drawEdgeThreshold(x, y, 1.0);
+  if(numWebcamsDetected() > 0){
+    drawEdgeThreshold(x, y, 1.0);
+  }
 }
 
 void ofxWebcamTracker::drawEdgeThreshold(float x, float y, float scale)
 {
-  ofNoFill();
-  ofSetColor(255, 90, 90);
-  ofDrawRectangle(x+(edgeThreshold * scale),y+(edgeThreshold * scale), (width*scale)-((edgeThreshold * scale)*2), (height*scale)-((edgeThreshold * scale)*2));
+  if(numWebcamsDetected() > 0){
+    ofNoFill();
+    ofSetColor(255, 90, 90);
+    ofDrawRectangle(x+(edgeThreshold * scale),y+(edgeThreshold * scale), (width*scale)-((edgeThreshold * scale)*2), (height*scale)-((edgeThreshold * scale)*2));
+  }
 }
 
 //Calibration

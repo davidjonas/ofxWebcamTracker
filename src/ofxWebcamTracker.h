@@ -13,8 +13,6 @@ class ofxWebcamTracker {
     ofxCvGrayscaleImage diff;
     ofxCvContourFinder contourFinder;
 
-    int webcamIndex;
-
     //flags
     bool backgroundSubtract;
     bool blur;
@@ -35,8 +33,6 @@ class ofxWebcamTracker {
     vector<ofxWebcamBlob> blobs;
 
     ofxWebcamTracker();
-    ofxWebcamTracker(int index);
-    ofxWebcamTracker(int index, float tolerance);
     ~ofxWebcamTracker();
 
     int numWebcamsDetected();
@@ -64,9 +60,11 @@ class ofxWebcamTracker {
     int getNumActiveBlobs();
     vector<ofxWebcamBlob> getActiveBlobs();
     bool isOverlapCandidate(ofxWebcamBlob blob);
+    bool thereAreOverlaps();
+    ofxWebcamBlob * getOverlapBlob();
 
     //Action Methods
-    void init(int index);
+    void init();
     void update();
     void grabBackground();
     void subtractBackground();
@@ -84,6 +82,8 @@ class ofxWebcamTracker {
     void draw();
     void drawRGB(float x, float y);
     void drawRGB(float x, float y, float scale);
+    void drawGrayscale(float x, float y);
+    void drawGrayscale(float x, float y, float scale);
     void drawBlobPositions(float x, float y);
     void drawBlobPositions(float x, float y, float scale);
     void drawBackground(float x, float y);
