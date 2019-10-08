@@ -42,6 +42,7 @@ void ofxWebcamTracker::init(vector<ofVideoDevice> active, int resolutionWidth, i
     minBlobSize = 100;
     outdoorMode=false;
     outdoorModeMinSpeed = 1;
+    outdoorModeBgRefreshRate = 5;
   }
 }
 
@@ -105,6 +106,12 @@ void ofxWebcamTracker::setOutdoorModeMinSpeed(float value) {
   outdoorModeMinSpeed = value;
 }
 
+
+void ofxWebcamTracker::setOutdoorModeBgRefreshRate(float value){
+  outdoorModeBgRefreshRate= value;
+}
+
+
 bool ofxWebcamTracker::getBackgroundSubtract(){
   return backgroundSubtract;
 }
@@ -162,6 +169,14 @@ int ofxWebcamTracker::getNumActiveBlobs()
   return count;
 }
 
+float ofxWebcamTracker::getOutdoorModeMinSpeed(){
+  return outdoorModeMinSpeed;
+}
+
+float ofxWebcamTracker::getOutdoorModeBgRefreshRate(){
+  return outdoorModeBgRefreshRate;
+}
+
 vector<ofxWebcamBlob> ofxWebcamTracker::getActiveBlobs(){
   vector<ofxWebcamBlob> vec;
 
@@ -206,7 +221,7 @@ bool ofxWebcamTracker::shouldGrabBackground(){
     }
   }
 
-  return active == 0 && ((numBlobs>0 && lastSeen > 3) || numBlobs == 0) && ofGetElapsedTimef() - lastBackgroundGrab > 3;
+  return active == 0 && ((numBlobs>0 && lastSeen > 3) || numBlobs == 0) && ofGetElapsedTimef() - lastBackgroundGrab > outdoorModeBgRefreshRate;
 }
 
 void ofxWebcamTracker::update(){
