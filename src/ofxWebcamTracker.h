@@ -19,6 +19,7 @@ class ofxWebcamTracker {
     bool blur;
     bool initialized;
 
+    float outdoorModeMinSpeed;
     float blurAmount;
     float threshold;
     float width;
@@ -50,6 +51,7 @@ class ofxWebcamTracker {
     void setEdgeThreshold(float value);
     void setMinBlobSize(float value);
     void setOutdoorMode(bool value);
+    void setOutdoorModeMinSpeed(float value);
     bool getBackgroundSubtract();
     bool getBlur();
     float getBlurAmount();

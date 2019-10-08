@@ -41,6 +41,7 @@ void ofxWebcamTracker::init(vector<ofVideoDevice> active, int resolutionWidth, i
     idCounter = 0;
     minBlobSize = 100;
     outdoorMode=false;
+    outdoorModeMinSpeed = 1;
   }
 }
 
@@ -98,6 +99,10 @@ void ofxWebcamTracker::setMinBlobSize(float value){
 
 void ofxWebcamTracker::setOutdoorMode(bool value){
   outdoorMode = value;
+}
+
+void ofxWebcamTracker::setOutdoorModeMinSpeed(float value) {
+  outdoorModeMinSpeed = value;
 }
 
 bool ofxWebcamTracker::getBackgroundSubtract(){
@@ -188,7 +193,7 @@ bool ofxWebcamTracker::shouldGrabBackground(){
   {
     if(blobs[i].isActive())
     {
-      if(blobs[i].speed > 3)
+      if(blobs[i].speed > outdoorModeMinSpeed)
       {
         active++;
       }
