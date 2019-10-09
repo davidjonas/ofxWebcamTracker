@@ -199,10 +199,14 @@ bool ofxWebcamTracker::isOverlapCandidate(ofxWebcamBlob blob){
 }
 
 bool ofxWebcamTracker::shouldGrabBackground(){
-  uint8_t active = 0;
+  int active = 0;
   float lastSeen = -1;
   int numBlobs = blobs.size();
 
+  if (numBlobs == 0)
+  {
+    return (ofGetElapsedTimef() - lastBackgroundGrab) > outdoorModeBgRefreshRate;
+  }
 
   for(uint8_t i=0; i<numBlobs; i++)
   {
@@ -215,13 +219,13 @@ bool ofxWebcamTracker::shouldGrabBackground(){
     }
     else {
       float bls = blobs[i].timeSinceLastSeen();
-      if(lastSeen == -1 || lastSeen > bls){
+      if(lastSeen == -1 || lastSeen < bls){
         lastSeen = bls;
       }
     }
   }
-
-  return active == 0 && ((numBlobs>0 && lastSeen > 3) || numBlobs == 0) && ofGetElapsedTimef() - lastBackgroundGrab > outdoorModeBgRefreshRate;
+  
+  return active == 0 && lastSeen > 3 && (ofGetElapsedTimef() - lastBackgroundGrab) > outdoorModeBgRefreshRate;
 }
 
 void ofxWebcamTracker::update(){
